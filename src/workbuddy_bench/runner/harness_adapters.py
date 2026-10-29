@@ -80,6 +80,18 @@ HARNESS_ADAPTERS: dict[str, HarnessRuntimeAdapter] = {
         proxy_url_env="CBC_PROXY_URL",
         uses_anthropic_env=False,
     ),
+    # Remote server-side platform harness: the agent runs on ADP and reaches
+    # the sandbox via the eval bridge; ADP manages the model itself, so the
+    # backend env vars point at the platform endpoint (direct mode only).
+    "adp": HarnessRuntimeAdapter(
+        harness_name="adp",
+        canonical_display_name="ADP Agent Platform",
+        harness_protocol="openai",
+        backend_base_env="ADP_BASE_URL",
+        backend_key_env="ADP_APP_KEY",
+        proxy_url_env="",  # the bench proxy cannot sit in ADP's model path
+        uses_anthropic_env=False,
+    ),
 }
 
 

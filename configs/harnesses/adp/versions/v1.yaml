@@ -1,0 +1,5 @@
+# ADP harness version v1. All knobs live in _defaults.yaml; this file only
+# pins the version tag (the loader requires one versions/<v>.yaml per slug).
+harness:
+  params:
+    ADP_VERSION: "v1"

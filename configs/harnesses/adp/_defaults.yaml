@@ -1,0 +1,19 @@
+# ADP harness defaults shared by all versions.
+#
+# ADP is a *server-side* agent platform, not a container CLI, so this harness
+# has no split-mount block (nothing to install inside the task container).
+# The evaluated agent runs in ADP's cloud sandbox and reaches the per-trial
+# Docker sandbox through the eval bridge (src/workbuddy_bench/bridge/).
+
+harness:
+  name: adp
+  import_path: "workbuddy_bench.agents.adp_agent:AdpAgent"
+  protocol: openai
+  params:
+    # Platform/harness version tag (also derives nothing — no mount to tag).
+    ADP_VERSION: "v1"
+    # External chat endpoint path on $ADP_BASE_URL (released-app SSE channel).
+    ADP_CHAT_PATH: /adp/v2/chat
+    # Max seconds without an SSE byte before the httpx read times out. The
+    # overall rollout is still bounded by Harbor's per-task timeout.
+    ADP_TIMEOUT_SEC: 600
