@@ -43,6 +43,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from workbuddy_bench.bridge.docker_exec import DockerExecError, docker_exec, q
 _MCP_PATH = "/mcp"
@@ -149,12 +150,28 @@ def _posix_parent(path: str) -> str:
 # ── MCP server ─────────────────────────────────────────────────────────
 
 def build_mcp_server(registry: WorkspaceRegistry) -> FastMCP:
+    # DNS rebinding protection: FastMCP's `host` kwarg defaults to "localhost",
+    # which auto-enables Host-header validation (mcp/server/fastmcp/server.py
+    # ~L191) and 421-rejects any non-local Host — even when uvicorn binds
+    # 0.0.0.0. Keep the protection but explicitly allow the loopback plus the
+    # public entry address from WB_BRIDGE_PUBLIC_HOST (e.g. "21.90.208.45").
+    public_host = os.environ.get("WB_BRIDGE_PUBLIC_HOST", "").strip()
+    allowed_hosts = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
+    allowed_origins = ["http://127.0.0.1:*", "http://localhost:*", "http://[::1]:*"]
+    if public_host:
+        allowed_hosts.append(f"{public_host}:*")
+        allowed_origins.append(f"http://{public_host}:*")
     mcp: FastMCP = FastMCP(
         "workbuddy-eval-bridge",
         # Tools are stateless (routing is via the explicit workspace_id), so
         # per-connection MCP sessions are unnecessary — stateless mode is the
         # most tolerant for gateway-managed MCP clients that may reconnect.
         stateless_http=True,
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=allowed_hosts,
+            allowed_origins=allowed_origins,
+        ),
     )
 
     def _ws(workspace_id: str) -> Workspace:
